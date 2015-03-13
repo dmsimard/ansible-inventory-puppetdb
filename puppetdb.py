@@ -16,6 +16,8 @@
 
 import argparse
 import collections
+import os
+import time
 from pypuppetdb import connect
 
 try:
@@ -32,6 +34,49 @@ class PuppetdbInventory(object):
 
         self.puppetdb = connect(**kwargs)
 
+        self.cache_file = os.path.join('/tmp/', "ansible-puppetdb.cache")
+        self.cache_max_age = 60
+
+    def is_cache_stale(self):
+        """
+        Validates whether or not the cache file is stale
+        """
+        if os.path.isfile(self.cache_file):
+            mod_time = os.path.getmtime(self.cache_file)
+            current_time = time.time()
+            if (mod_time + self.cache_max_age) > current_time:
+                return False
+
+        return True
+
+    def write_cache(self, groups):
+        """
+        Writes to the cache file
+        """
+        with open(self.cache_file, 'w') as cache_file:
+            cache_file.write(groups)
+
+    def get_host_list(self):
+        """
+        Updates the cache file, if necessary, and returns the inventory from it
+        """
+        if self.is_cache_stale():
+            groups = self.fetch_host_list()
+            self.write_cache(groups)
+
+        groups = json.load(open(self.cache_file, 'r'))
+        return json.dumps(groups, sort_keys=True, indent=2)
+
+    def get_host_detail(self, host):
+        """
+        Returns data for a specific host only
+        """
+        facts = {
+            host: self.fetch_host_facts(host)
+        }
+
+        return json.dumps(facts, sort_keys=True, indent=2)
+
     def fetch_host_facts(self, host):
         """
         Fetch all fact and their values for a given host
@@ -46,17 +91,7 @@ class PuppetdbInventory(object):
 
         return facts
 
-    def host_detail(self, host):
-        """
-        Returns data for a specific host only
-        """
-        facts = {
-            host: self.fetch_host_facts(host)
-        }
-
-        return json.dumps(facts, sort_keys=True, indent=2)
-
-    def host_list(self):
+    def fetch_host_list(self):
         """
         Returns data for all hosts found in PuppetDB
         """
@@ -109,10 +144,10 @@ def main():
 
     inventory = PuppetdbInventory(**vars(args))
     if args.list:
-        print(inventory.host_list())
+        print(inventory.get_host_list())
 
     if args.server:
-        print(inventory.host_detail(args.server))
+        print(inventory.get_host_detail(args.server))
 
 if __name__ == '__main__':
     main()
