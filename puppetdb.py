@@ -31,6 +31,7 @@ class PuppetdbInventory(object):
         # Args we don't want to pass to PyPuppetDB
         del kwargs['list']
         del kwargs['server']
+        del kwargs['group_by']
 
         self.puppetdb = connect(**kwargs)
 
@@ -56,12 +57,12 @@ class PuppetdbInventory(object):
         with open(self.cache_file, 'w') as cache_file:
             cache_file.write(groups)
 
-    def get_host_list(self):
+    def get_host_list(self, group_by):
         """
         Updates the cache file, if necessary, and returns the inventory from it
         """
         if self.is_cache_stale():
-            groups = self.fetch_host_list()
+            groups = self.fetch_host_list(group_by)
             self.write_cache(groups)
 
         groups = json.load(open(self.cache_file, 'r'))
@@ -91,17 +92,30 @@ class PuppetdbInventory(object):
 
         return facts
 
-    def fetch_host_list(self):
+    def fetch_host_list(self, group_by):
         """
         Returns data for all hosts found in PuppetDB
         """
-        groups = collections.defaultdict(list)
+        groups = collections.defaultdict(dict)
         hostvars = collections.defaultdict(dict)
+
+        groups['unknown']['hosts'] = list()
+        groups['all']['hosts'] = list()
 
         for node in self.puppetdb.nodes():
             server = str(node)
 
-            groups['default'].append(server)
+            if group_by is not None:
+                try:
+                    fact_value = node.fact(group_by).value
+                    if fact_value not in groups:
+                        groups[fact_value]['hosts'] = list()
+                    groups[fact_value]['hosts'].append(server)
+                except StopIteration:
+                    # This fact does not exist on the server
+                    groups['unknown']['hosts'].append(server)
+
+            groups['all']['hosts'].append(server)
             hostvars[server] = self.fetch_host_facts(server)
             groups['_meta'] = {'hostvars': hostvars}
 
@@ -131,6 +145,8 @@ def parse_args():
                         help='PuppetDB port. Defaults to 8080.')
     parser.add_argument('--timeout', type=int, default=10,
                         help='Max timeout in seconds. Defaults to 10.')
+    parser.add_argument('--group_by', default='node_role',
+                        help='Fact with which the groups will be made.')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--list', action='store_true',
                        help='List servers known by PuppetDB')
@@ -144,7 +160,7 @@ def main():
 
     inventory = PuppetdbInventory(**vars(args))
     if args.list:
-        print(inventory.get_host_list())
+        print(inventory.get_host_list(args.group_by))
 
     if args.server:
         print(inventory.get_host_detail(args.server))
