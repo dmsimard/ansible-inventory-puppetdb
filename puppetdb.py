@@ -15,6 +15,7 @@
 #
 
 import argparse
+import collections
 from pypuppetdb import connect
 
 try:
@@ -59,12 +60,17 @@ class PuppetdbInventory(object):
         """
         Returns data for all hosts found in PuppetDB
         """
-        facts = dict()
+        groups = collections.defaultdict(list)
+        hostvars = collections.defaultdict(dict)
+
         for node in self.puppetdb.nodes():
             server = str(node)
-            facts[server] = self.fetch_host_facts(server)
 
-        return json.dumps(facts, sort_keys=True, indent=2)
+            groups['default'].append(server)
+            hostvars[server] = self.fetch_host_facts(server)
+            groups['_meta'] = {'hostvars': hostvars}
+
+        return json.dumps(groups, sort_keys=True, indent=2)
 
 
 def parse_args():
