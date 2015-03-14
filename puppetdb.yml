@@ -1,0 +1,45 @@
+# This is the configuration file for the Ansible plugin for PuppetDB inventory.
+#
+# Author: David Moreau Simard <moi@dmsimard.com>
+#
+# == Parameters
+# - host: Host on which to connect to for PuppetDB
+# - api_version: PuppetDB API version
+# - port: PuppetDB jetty port
+# - timeout: Timeout for connection
+# - ssl_verify: Whether or not to verify SSL certificate
+# - ssl_key: Path to SSL client key
+# - ssl_cert: Path to SSL client cert
+# - cache_file: Where to store the inventory cache
+# - cache_duration: How long should cache persist until refreshed automatically
+# - group_by: Generate groups based on puppet fact values
+#
+# == Notes on group_by
+# This will generate ansible-compatible groups based on fact values
+# For example, if you want to group hosts based on the 'kernelversion' fact,
+# set group_by to 'kernelversion'.
+# This will generate something like this:
+# "3.2": {
+#   hosts: [ 'server1', 'server2' ]
+# },
+# "3.13": {
+#   hosts: [ 'server3', 'server4' ]
+# },
+# "3.16": {
+#   hosts: [ 'server5' ]
+# }
+#
+# Regardless of whether or not group_by is set, the inventory will
+# always return a group called 'all' with all the hosts in it.
+#
+---
+host: localhost
+api_version: 3
+port: 8080
+timeout: 10
+ssl_verify: False
+ssl_key:
+ssl_cert:
+cache_file: '/tmp/ansible-inventory-puppetdb.cache'
+cache_duration: 30
+group_by:

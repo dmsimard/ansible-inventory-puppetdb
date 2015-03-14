@@ -17,7 +17,9 @@
 import argparse
 import collections
 import os
+import sys
 import time
+import yaml
 from pypuppetdb import connect
 
 try:
@@ -26,17 +28,47 @@ except:
     import simplejson as json
 
 
-class PuppetdbInventory(object):
-    def __init__(self, **kwargs):
-        # Args we don't want to pass to PyPuppetDB
-        del kwargs['list']
-        del kwargs['server']
-        del kwargs['group_by']
+# First file found will have precedence
+CONFIG_FILES = [
+    os.getcwd() + '/puppetdb.yml',
+    os.path.expanduser(os.environ.get('ANSIBLE_CONFIG', "~/puppetdb.yml")),
+    '/etc/ansible/puppetdb.yml'
+]
 
-        self.puppetdb = connect(**kwargs)
+
+class PuppetdbInventory(object):
+    def __init__(self):
+        self.config = self.load_config()
+        if not self.config:
+            sys.exit('Error: Could not load any config files: {0}'
+                     .format(', '.join(CONFIG_FILES)))
+
+        puppetdb_config = {
+            'host': self.config.get('host'),
+            'api_version': self.config.get('api_version'),
+            'port': self.config.get('port'),
+            'timeout': self.config.get('timeout'),
+            'ssl_verify': self.config.get('ssl_verify'),
+            'ssl_key': self.config.get('ssl_key') or None,
+            'ssl_cert': self.config.get('ssl_cert') or None
+        }
+
+        self.puppetdb = connect(**puppetdb_config)
 
         self.cache_file = os.path.join('/tmp/', "ansible-puppetdb.cache")
         self.cache_max_age = 60
+
+    def load_config(self):
+        for path in CONFIG_FILES:
+            if os.path.exists(path):
+                with open(path) as f:
+                    try:
+                        config = yaml.safe_load(f.read())
+                        return config
+                    except Exception as e:
+                        sys.exit(str(e))
+
+        return None
 
     def is_cache_stale(self):
         """
@@ -57,12 +89,12 @@ class PuppetdbInventory(object):
         with open(self.cache_file, 'w') as cache_file:
             cache_file.write(groups)
 
-    def get_host_list(self, group_by):
+    def get_host_list(self):
         """
         Updates the cache file, if necessary, and returns the inventory from it
         """
         if self.is_cache_stale():
-            groups = self.fetch_host_list(group_by)
+            groups = self.fetch_host_list()
             self.write_cache(groups)
 
         groups = json.load(open(self.cache_file, 'r'))
@@ -92,15 +124,16 @@ class PuppetdbInventory(object):
 
         return facts
 
-    def fetch_host_list(self, group_by):
+    def fetch_host_list(self):
         """
         Returns data for all hosts found in PuppetDB
         """
         groups = collections.defaultdict(dict)
         hostvars = collections.defaultdict(dict)
 
-        groups['unknown']['hosts'] = list()
         groups['all']['hosts'] = list()
+
+        group_by = self.config.get('group_by')
 
         for node in self.puppetdb.nodes():
             server = str(node)
@@ -113,6 +146,8 @@ class PuppetdbInventory(object):
                     groups[fact_value]['hosts'].append(server)
                 except StopIteration:
                     # This fact does not exist on the server
+                    if 'unknown' not in groups:
+                        groups['unknown']['hosts'] = list()
                     groups['unknown']['hosts'].append(server)
 
             groups['all']['hosts'].append(server)
@@ -125,32 +160,12 @@ class PuppetdbInventory(object):
 def parse_args():
     """
     Parses script arguments.
-    Note: Pypuppetdb expects a parameter 'host' for the host on which it
-    will connect to PuppetDB.
-    Since this conflicts with the expected '--host' expected parameter for
-    the ansible inventory, they are interchanged here.
     """
     parser = argparse.ArgumentParser(description='PuppetDB Inventory Module')
-    parser.add_argument('--server', default='localhost', dest='host',
-                        help='PuppetDB server. Defaults to localhost.')
-    parser.add_argument('--ssl_verify', default=False, action='store_true',
-                        help='Verify SSL certificate. Defaults to False.')
-    parser.add_argument('--ssl_key', default=None,
-                        help='Path to SSL client key. Defaults to None.')
-    parser.add_argument('--ssl_cert', default=None,
-                        help='Path to SSL client cert. Defaults to None.')
-    parser.add_argument('--api_version', type=int, default=3,
-                        help='API Version for puppetdb. Defaults to 3')
-    parser.add_argument('--port', type=int, default=8080,
-                        help='PuppetDB port. Defaults to 8080.')
-    parser.add_argument('--timeout', type=int, default=10,
-                        help='Max timeout in seconds. Defaults to 10.')
-    parser.add_argument('--group_by', default='node_role',
-                        help='Fact with which the groups will be made.')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--list', action='store_true',
                        help='List servers known by PuppetDB')
-    group.add_argument('--host', dest='server',
+    group.add_argument('--host',
                        help='List details about specified host')
     return parser.parse_args()
 
@@ -158,12 +173,12 @@ def parse_args():
 def main():
     args = parse_args()
 
-    inventory = PuppetdbInventory(**vars(args))
+    inventory = PuppetdbInventory()
     if args.list:
-        print(inventory.get_host_list(args.group_by))
+        print(inventory.get_host_list())
 
-    if args.server:
-        print(inventory.get_host_detail(args.server))
+    if args.host:
+        print(inventory.get_host_detail(args.host))
 
 if __name__ == '__main__':
     main()
