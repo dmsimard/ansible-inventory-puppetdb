@@ -59,6 +59,9 @@ class PuppetdbInventory(object):
         self.cache_duration = self.config.get('cache_duration')
 
     def load_config(self):
+        """
+        Looks for and loads yml configuration files
+        """
         for path in CONFIG_FILES:
             if os.path.exists(path):
                 with open(path) as f:
