@@ -55,8 +55,8 @@ class PuppetdbInventory(object):
 
         self.puppetdb = connect(**puppetdb_config)
 
-        self.cache_file = os.path.join('/tmp/', "ansible-puppetdb.cache")
-        self.cache_max_age = 60
+        self.cache_file = self.config.get('cache_file')
+        self.cache_duration = self.config.get('cache_duration')
 
     def load_config(self):
         for path in CONFIG_FILES:
@@ -77,7 +77,7 @@ class PuppetdbInventory(object):
         if os.path.isfile(self.cache_file):
             mod_time = os.path.getmtime(self.cache_file)
             current_time = time.time()
-            if (mod_time + self.cache_max_age) > current_time:
+            if (mod_time + self.cache_duration) > current_time:
                 return False
 
         return True
