@@ -17,7 +17,7 @@ Usage
 Configuration
 =============
 
-See in-file documentation provided in puppetdb.yml
+See in-file documentation provided in [puppetdb.yml](https://github.com/dmsimard/ansible-inventory-puppetdb/blob/master/puppetdb.yml)
 
 Host example
 ============
