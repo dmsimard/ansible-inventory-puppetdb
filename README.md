@@ -1,5 +1,5 @@
 # ansible-inventory-puppetdb
-Leverage puppet facts and puppetdb to generate a dynamic ansible inventory
+Leverage Puppet facts and PuppetDB to generate a dynamic Ansible inventory
 
 Usage
 =====
