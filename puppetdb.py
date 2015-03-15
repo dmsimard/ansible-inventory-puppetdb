@@ -16,7 +16,7 @@
 #
 #   Author: David Moreau Simard <dmsimard@iweb.com>
 #
-
+from __future__ import print_function
 import argparse
 import collections
 import os
@@ -27,7 +27,7 @@ from pypuppetdb import connect
 
 try:
     import json
-except:
+except ImportError:
     import simplejson as json
 
 
@@ -39,9 +39,30 @@ CONFIG_FILES = [
 ]
 
 
+def load_config():
+    """
+    Looks for and loads yml configuration files
+    """
+    for path in CONFIG_FILES:
+        if os.path.exists(path):
+            try:
+                with open(path) as config_file:
+                    config = yaml.safe_load(config_file.read())
+                    return config
+            except IOError as error:
+                print("I/O error ({0}): {1}".format(path, error.strerror))
+                sys.exit(1)
+
+    return None
+
+
 class PuppetdbInventory(object):
+    """
+    A class that wraps around pypuppetdb to return ansible-compatible host
+    lists and their hostvars (facts) based on data provided by PuppetDB.
+    """
     def __init__(self):
-        self.config = self.load_config()
+        self.config = load_config()
         if not self.config:
             sys.exit('Error: Could not load any config files: {0}'
                      .format(', '.join(CONFIG_FILES)))
@@ -60,21 +81,6 @@ class PuppetdbInventory(object):
 
         self.cache_file = self.config.get('cache_file')
         self.cache_duration = self.config.get('cache_duration')
-
-    def load_config(self):
-        """
-        Looks for and loads yml configuration files
-        """
-        for path in CONFIG_FILES:
-            if os.path.exists(path):
-                with open(path) as f:
-                    try:
-                        config = yaml.safe_load(f.read())
-                        return config
-                    except Exception as e:
-                        sys.exit(str(e))
-
-        return None
 
     def is_cache_stale(self):
         """
@@ -177,6 +183,9 @@ def parse_args():
 
 
 def main():
+    """
+    Instanciate the inventory and return a single host or a list of hosts
+    """
     args = parse_args()
 
     inventory = PuppetdbInventory()
