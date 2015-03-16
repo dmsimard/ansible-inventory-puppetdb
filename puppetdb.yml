@@ -1,6 +1,6 @@
 # This is the configuration file for the Ansible plugin for PuppetDB inventory.
 #
-# Author: David Moreau Simard <moi@dmsimard.com>
+# Author: David Moreau Simard <dmsimard@iweb.com>
 #
 # == Parameters
 # - host: Host on which to connect to for PuppetDB
