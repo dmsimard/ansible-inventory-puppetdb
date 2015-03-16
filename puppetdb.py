@@ -33,8 +33,8 @@ except ImportError:
 
 # First file found will have precedence
 CONFIG_FILES = [
-    os.getcwd() + '/puppetdb.yml',
     os.path.expanduser(os.environ.get('ANSIBLE_CONFIG', "~/puppetdb.yml")),
+    os.getcwd() + '/puppetdb.yml',
     '/etc/ansible/puppetdb.yml'
 ]
 
