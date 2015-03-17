@@ -62,7 +62,7 @@ class PuppetdbInventory(object):
     A class that wraps around pypuppetdb to return ansible-compatible host
     lists and their hostvars (facts) based on data provided by PuppetDB.
     """
-    def __init__(self):
+    def __init__(self, refresh):
         self.config = load_config()
         if not self.config:
             sys.exit('Error: Could not load any config files: {0}'
@@ -82,6 +82,7 @@ class PuppetdbInventory(object):
 
         self.cache_file = self.config.get('cache_file')
         self.cache_duration = self.config.get('cache_duration')
+        self.refresh = refresh
 
     def is_cache_stale(self):
         """
@@ -106,7 +107,7 @@ class PuppetdbInventory(object):
         """
         Updates the cache file, if necessary, and returns the inventory from it
         """
-        if self.is_cache_stale():
+        if self.is_cache_stale() or self.refresh:
             groups = self.fetch_host_list()
             self.write_cache(groups)
 
@@ -175,6 +176,8 @@ def parse_args():
     Parses script arguments.
     """
     parser = argparse.ArgumentParser(description='PuppetDB Inventory Module')
+    parser.add_argument('--refresh', action='store_true', default=False,
+                        help='Refreshes cached information')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--list', action='store_true',
                        help='List servers known by PuppetDB')
@@ -189,7 +192,7 @@ def main():
     """
     args = parse_args()
 
-    inventory = PuppetdbInventory()
+    inventory = PuppetdbInventory(args.refresh)
     if args.list:
         print(inventory.get_host_list())
 
