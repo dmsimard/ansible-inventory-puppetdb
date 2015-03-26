@@ -11,6 +11,7 @@ Usage
 
     optional arguments:
       -h, --help   show this help message and exit
+      --refresh    Refreshes cached information
       --list       List servers known by PuppetDB
       --host HOST  List details about specified host
 
