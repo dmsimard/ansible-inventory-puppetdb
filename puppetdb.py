@@ -25,10 +25,15 @@ import time
 import yaml
 from pypuppetdb import connect
 
+# Try to use the fastest json lib available
+# Resort back to stdlib if necessary (slower)
 try:
-    import json
+    import ujson as json
 except ImportError:
-    import simplejson as json
+    try:
+        import simplejson as json
+    except ImportError:
+        import json
 
 
 # First file found will have precedence
@@ -112,7 +117,7 @@ class PuppetdbInventory(object):
             self.write_cache(groups)
 
         groups = json.load(open(self.cache_file, 'r'))
-        return json.dumps(groups, sort_keys=True, indent=2)
+        return json.dumps(groups)
 
     def get_host_detail(self, host):
         """
@@ -122,7 +127,7 @@ class PuppetdbInventory(object):
             host: self.fetch_host_facts(host)
         }
 
-        return json.dumps(facts, sort_keys=True, indent=2)
+        return json.dumps(facts)
 
     def fetch_host_facts(self, host):
         """
@@ -168,7 +173,7 @@ class PuppetdbInventory(object):
             hostvars[server] = self.fetch_host_facts(server)
             groups['_meta'] = {'hostvars': hostvars}
 
-        return json.dumps(groups, sort_keys=True, indent=2)
+        return json.dumps(groups)
 
 
 def parse_args():
