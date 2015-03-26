@@ -19,8 +19,22 @@ Configuration
 
 See in-file documentation provided in [puppetdb.yml](https://github.com/dmsimard/ansible-inventory-puppetdb/blob/master/puppetdb.yml)
 
-Host example
-============
+Notes on large(r) amount of hosts in a single PuppetDB instance
+---------------------------------------------------------------
+If you are dealing with a large(r) amount of hosts in a single PuppetDB instance, what becomes important for improving performance is:
+
+1. The JSON library to encode and decode data for Ansible to use
+> The script will automatically attempt to load, in order of performance: ujson > simplejson > json (stdlib). For best results, try to install ujson.
+
+2. Latency between where you run the inventory script and the PuppetDB instance
+> Try to run the inventory somewhere with as little latency as you can to your PuppetDB instance.
+
+3. Performance of the server the inventory is run on
+
+4. Performance of the PuppetDB server
+
+Usage example
+=============
 
     ./puppetdb.py --host node.domain.tld
     {
