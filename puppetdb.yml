@@ -29,6 +29,23 @@
 #   hosts: [ 'server5' ]
 # }
 #
+# == Notes on group_by_tags
+# This will generate ansible-compatible groups based on tag values
+# For example, if you want to group hosts based on the Puppet Class tag you tag
+# in your Puppet code "web-development" set group_by to this:
+#
+# group_by_tag:
+#   - Class: web-development
+#   - Class: web-production
+#
+# This will generate something like this:
+# "web-development": {
+#   hosts: [ 'node01-dev.domain.tld', 'node02-dev.domain.tld' ]
+# }
+# "web-production": {
+#   hosts: [ 'node01-production.domain.tld', 'node02-production.domain.tld' ]
+# }
+#
 # Regardless of whether or not group_by is set, the inventory will
 # always return a group called 'all' with all the hosts in it.
 #
@@ -43,3 +60,4 @@ ssl_cert:
 cache_file: '/tmp/ansible-inventory-puppetdb.cache'
 cache_duration: 30
 group_by:
+group_by_tag:

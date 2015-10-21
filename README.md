@@ -289,3 +289,33 @@ __With group_by set to 'kernelversion'__
         ]
       }
     }
+
+__With group_by_tag set to__
+
+```
+#Puppet code example tagging class...
+class webservices_tag {
+
+  case $fqdn {
+    /\-dev/: { tag 'web-development' }
+    /\-production/: { tag 'web-production' }
+  }
+
+}
+```
+
+```
+group_by_tag:
+  - Class: web-development
+  - Class: web-production
+```
+
+Snippet of tagged group being added...
+```
+ "web-development": {
+   hosts: [ 'node01-dev.domain.tld', 'node02-dev.domain.tld' ]
+ }
+ "web-production": {
+   hosts: [ 'node01-production.domain.tld', 'node02-production.domain.tld' ]
+ }
+```
