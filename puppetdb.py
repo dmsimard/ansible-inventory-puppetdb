@@ -143,6 +143,20 @@ class PuppetdbInventory(object):
 
         return facts
 
+    def fetch_tag_results(self, tag_lookup):
+        """
+        Fetch all hosts based upon resource type tag
+        """
+        hosts = []
+
+        for resource_type, tag in tag_lookup.iteritems():
+            resources = self.puppetdb.resources(
+                type_="{0}".format(resource_type),
+                query='["=", "tag", "{0}"]'.format(tag))
+            for host in resources:
+                hosts.append(host.node)
+        return hosts
+
     def fetch_host_list(self):
         """
         Returns data for all hosts found in PuppetDB
@@ -153,6 +167,7 @@ class PuppetdbInventory(object):
         groups['all']['hosts'] = list()
 
         group_by = self.config.get('group_by')
+        group_by_tag = self.config.get('group_by_tag')
 
         for node in self.puppetdb.nodes():
             server = str(node)
@@ -168,6 +183,17 @@ class PuppetdbInventory(object):
                     if 'unknown' not in groups:
                         groups['unknown']['hosts'] = list()
                     groups['unknown']['hosts'].append(server)
+
+            if group_by_tag:
+                for entry in group_by_tag:
+                    for resource_type, tag in entry.iteritems():
+                        tag_lookup = { resource_type: tag }
+                        tagged_hosts = self.fetch_tag_results(tag_lookup)
+                        group_key = tag
+                        if server in tagged_hosts:
+                            if group_key not in groups:
+                                groups[group_key]['hosts'] = list()
+                            groups[group_key]['hosts'].append(server)
 
             groups['all']['hosts'].append(server)
             hostvars[server] = self.fetch_host_facts(server)
