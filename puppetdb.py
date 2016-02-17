@@ -134,10 +134,7 @@ class PuppetdbInventory(object):
         Fetch all fact and their values for a given host
         """
         node = self.puppetdb.node(host)
-        facts = {
-            fact.name: fact.value
-            for fact in node.facts()
-        }
+        facts = dict((fact.name,fact.value) for fact in node.facts())
 
         facts['ansible_ssh_host'] = node.fact('fqdn').value
 
