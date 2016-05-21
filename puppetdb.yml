@@ -51,7 +51,6 @@
 #
 ---
 host: localhost
-api_version: 3
 port: 8080
 timeout: 10
 ssl_verify: False

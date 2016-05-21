@@ -75,7 +75,6 @@ class PuppetdbInventory(object):
 
         puppetdb_config = {
             'host': self.config.get('host'),
-            'api_version': self.config.get('api_version'),
             'port': self.config.get('port'),
             'timeout': self.config.get('timeout'),
             'ssl_verify': self.config.get('ssl_verify'),
