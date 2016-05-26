@@ -4,7 +4,6 @@
 #
 # == Parameters
 # - host: Host on which to connect to for PuppetDB
-# - api_version: PuppetDB API version
 # - port: PuppetDB jetty port
 # - timeout: Timeout for connection
 # - ssl_verify: Whether or not to verify SSL certificate
